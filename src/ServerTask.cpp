@@ -24,6 +24,7 @@ int ServerTask::WriteThread(void *arg)
         {
             printf("%d: No buf. Write thread exit.\n", connfd);
             close(connfd);
+            connect_num--;
             return -1;
         }
         printf("%d: %s\n", connfd, recvbuf);

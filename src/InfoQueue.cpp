@@ -16,7 +16,7 @@ InfoQueue::Info InfoQueue::read(size_t last_hash, SOCKET sock)
     while (true)
     {
         queueLock.Lock();
-        if (read_num >= connect_num) //_queue.empty()
+        if (read_num >= connect_num)
         {
             queueLock.UnLock();
             Sleep(rand() % 200);
@@ -24,7 +24,6 @@ InfoQueue::Info InfoQueue::read(size_t last_hash, SOCKET sock)
         }
         else
         {
-            //info = _queue.front();
             info = latest_info;
 
             // self-produce
