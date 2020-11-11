@@ -16,6 +16,7 @@ CLIENT_OBJECTS := $(addprefix $(DIR_OBJ)/,$(CLIENT_OBJECTS))
 
 all: $(CLIENT_TARGET) $(SERVER_TARGET)
 
+$(shell mkdir obj)
 
 $(CLIENT_TARGET): $(CLIENT_OBJECTS)
 	$(CC) -o $(CLIENT_TARGET) $(CLIENT_OBJECTS) $(LIBS)
@@ -32,4 +33,5 @@ clean:
 	-del $(DIR_OBJ_WIN)\*.o
 	-del $(SERVER_TARGET) 
 	-del $(CLIENT_TARGET)
+	rmdir obj
 
