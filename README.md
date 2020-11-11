@@ -26,13 +26,13 @@ You can also use multi-thread compiling:
 
 ## Run
 
-Use command
+First run Server.exe on one host, 
 
-    Client
+    Server.exe
 
-or/and
+then run Client.exe for each user participating in the chat.
 
-    Server
+    Client.exe
 
-to launch the server/client.
+Each client needs to enter the IP address of the Server host (IPv4 support only).
 
