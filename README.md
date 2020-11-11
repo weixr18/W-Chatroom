@@ -1,5 +1,7 @@
 # TCP-Chatroom
 
+Multithread CLI chatroom, pure C++, based on TCP.
+
 ## Install
 
 First clean the binary files by:
@@ -15,6 +17,7 @@ You can also use multi-thread compiling:
     make -j4
 
 ## Run
+
 Use command
 
     Client
@@ -22,3 +25,6 @@ Use command
 or/and
 
     Server
+
+to launch the server/client.
+

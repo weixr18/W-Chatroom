@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include <string.h>
 
+#define SERVER_PORT 6500
+
 SOCKET Client_Sock;
 
 unsigned __stdcall PrintThread(void *arg)
@@ -30,6 +32,12 @@ unsigned __stdcall PrintThread(void *arg)
 
 int main()
 {
+    // Input server IP
+    char serverIPAddr[20] = {0};
+    printf("Server IP address:");
+    gets(serverIPAddr);
+    unsigned long server_addr = inet_addr(serverIPAddr);
+
     // startup
     WORD sockVersion = MAKEWORD(2, 2);
     WSADATA wsaData;
@@ -60,8 +68,8 @@ int main()
     struct sockaddr_in ser, cli;
     memset(&ser, 0x00, sizeof(ser));
     ser.sin_family = AF_INET;
-    ser.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-    ser.sin_port = htons(6500);
+    ser.sin_addr.S_un.S_addr = server_addr;
+    ser.sin_port = htons(SERVER_PORT);
 
     // connect socket
     if (connect(Client_Sock, (struct sockaddr *)&ser, sizeof(ser)) == SOCKET_ERROR)

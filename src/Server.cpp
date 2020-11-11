@@ -2,6 +2,8 @@
 #include "InfoQueue.h"
 #include "ServerTask.h"
 
+#define SERVER_PORT 6500
+
 //create thread pool
 ThreadPool Pool(10);
 
@@ -37,8 +39,8 @@ int main(int argc, char *argv[])
     struct sockaddr_in ser, cli;
     memset(&ser, 0, sizeof(ser));
     ser.sin_family = AF_INET;
-    ser.sin_port = htons(6500);
-    ser.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+    ser.sin_port = htons(SERVER_PORT);
+    ser.sin_addr.S_un.S_addr = INADDR_ANY; //inet_addr("127.0.0.1");
 
     // bind socket
     if (bind(sockfd, (LPSOCKADDR)&ser, sizeof(ser)) == SOCKET_ERROR)
