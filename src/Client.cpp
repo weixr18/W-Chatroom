@@ -7,27 +7,61 @@
 #include <sys/types.h>
 #include <string.h>
 
-#define SERVER_PORT 6500
+#define __USE_TCP
+#ifdef __USE_TCP
+#define USE_TCP true
+#else //__USE_TCP
+#define USE_TCP false
+#endif //__USE_TCP
+sockaddr UDPServerAddr;
 
+#define SERVER_PORT 6500
 SOCKET Client_Sock;
+#define BUF_SIZE 1024
 
 unsigned __stdcall PrintThread(void *arg)
 {
-    while (1)
+    if (USE_TCP)
     {
-        char buff[1024] = {0};
-        fflush(stdout);
-        memset(buff, 0, 1024);
-        int res = recv(Client_Sock, buff, 1023, 0);
-        if (res <= 0)
+        while (1)
         {
-            printf("Server end connection.\n");
-            break;
-        }
+            char buff[BUF_SIZE] = {0};
+            fflush(stdout);
+            memset(buff, 0, BUF_SIZE);
+            int res = recv(Client_Sock, buff, BUF_SIZE - 1, 0);
+            if (res <= 0)
+            {
+                printf("Server end connection.\n");
+                break;
+            }
 
-        printf("%s\n>", buff);
+            printf("%s\n>", buff);
+        }
+        return 0;
     }
-    return 0;
+    else
+    {
+        sockaddr_in addrObj;
+        addrObj.sin_family = AF_INET;
+        addrObj.sin_port = htons(SERVER_PORT);
+        int len;
+
+        while (1)
+        {
+            char buff[BUF_SIZE] = {0};
+            fflush(stdout);
+            memset(buff, 0, BUF_SIZE);
+            int res = recvfrom(Client_Sock, buff, BUF_SIZE - 1, 0, &UDPServerAddr, &len);
+            if (res <= 0)
+            {
+                printf("Server end connection.\n");
+                break;
+            }
+
+            printf("%s\n>", buff);
+        }
+        return 0;
+    }
 }
 
 int main()
@@ -53,7 +87,14 @@ int main()
     }
 
     // create socket
-    Client_Sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (USE_TCP)
+    {
+        Client_Sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    }
+    else
+    {
+        Client_Sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    }
     if (Client_Sock == INVALID_SOCKET)
     {
         printf("Socket error!\n");
@@ -70,6 +111,11 @@ int main()
     ser.sin_family = AF_INET;
     ser.sin_addr.S_un.S_addr = server_addr;
     ser.sin_port = htons(SERVER_PORT);
+
+    if (!USE_TCP)
+    {
+        memcpy(&UDPServerAddr, (struct sockaddr *)&ser, sizeof(struct sockaddr));
+    }
 
     // connect socket
     if (connect(Client_Sock, (struct sockaddr *)&ser, sizeof(ser)) == SOCKET_ERROR)
@@ -94,8 +140,8 @@ int main()
 
     while (1)
     {
-        char buff[1024] = {0};
-        fgets(buff, 1023, stdin);
+        char buff[BUF_SIZE] = {0};
+        fgets(buff, BUF_SIZE - 1, stdin);
         printf(">");
         if (strncmp(buff, "quit", 4) == 0)
         {

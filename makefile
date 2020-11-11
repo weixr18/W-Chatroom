@@ -1,7 +1,7 @@
 CC:= g++
-INCLUDE:= -I./ 
-LIBS:= -lstdc++ -lwsock32
-CXXFLAGS:= -std=c++11 -g
+INCLUDE:= -I./
+LIBS:= -lstdc++ -lwsock32 
+CXXFLAGS:= -std=c++11 -g -pthread
 DIR_SRC:= ./src
 DIR_OBJ:= ./obj
 DIR_OBJ_WIN:= .\obj

@@ -2,10 +2,41 @@
 #include "InfoQueue.h"
 #include "ServerTask.h"
 
+#define __USE_TCP
+#ifdef __USE_TCP
+#define USE_TCP true
+#else //__USE_TCP
+#define USE_TCP false
+#endif //__USE_TCP
+
 #define SERVER_PORT 6500
+#define BUF_SIZE 1024
+
+// UDP
+SOCKET UDPSock;
+in_addr UDP_addr;
 
 //create thread pool
 ThreadPool Pool(10);
+
+unsigned __stdcall UDPReceiveThread(void *arg)
+{
+    char recvBuf[BUF_SIZE];
+    while (true)
+    {
+        memset(recvBuf, 0x00, sizeof(recvBuf));
+        struct sockaddr_in addr;
+        int len = sizeof(sockaddr);
+        int res = recvfrom(UDPSock, recvBuf, sizeof(recvBuf), 0, (struct sockaddr *)&addr, &len);
+        if (res == SOCKET_ERROR)
+        {
+            return -1;
+        }
+        printf("[%s]Says:%s\n", inet_ntoa(addr.sin_addr), recvBuf);
+        UDP_addr = addr.sin_addr;
+    }
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -24,7 +55,17 @@ int main(int argc, char *argv[])
     }
 
     // create socket
-    SOCKET sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    SOCKET sockfd;
+    if (USE_TCP)
+    {
+        sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    }
+    else
+    {
+        sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        UDPSock = sockfd;
+    }
+
     if (sockfd == INVALID_SOCKET)
     {
         printf("Socket error!\n");
@@ -52,38 +93,75 @@ int main(int argc, char *argv[])
         printf("Bind success.\n");
     }
 
-    // listen
-    if (listen(sockfd, 5) == SOCKET_ERROR)
+    if (USE_TCP)
     {
-        printf("Listen error!\n");
-        return 0;
-    }
-    else
-    {
-        printf("Start listen.\n");
+        // listen
+        if (listen(sockfd, 5) == SOCKET_ERROR)
+        {
+            printf("Listen error!\n");
+            return 0;
+        }
+        else
+        {
+            printf("Start listen.\n");
+        }
     }
 
     srand(time(NULL));
 
-    while (1)
+    if (USE_TCP)
     {
-        socklen_t len = sizeof(cli);
-        SOCKET connectfd = accept(sockfd, (struct sockaddr *)&cli, &len);
-        if (connectfd < 0)
+        while (1)
         {
-            printf("Cli connect failed.\n");
-            throw std::exception();
+            socklen_t len = sizeof(cli);
+            SOCKET connectfd = accept(sockfd, (struct sockaddr *)&cli, &len);
+            if (connectfd < 0)
+            {
+                printf("Cli connect failed.\n");
+                throw std::exception();
+            }
+            else
+            {
+                ServerTask *ta = new ServerTask;
+                ta->SetSocket(connectfd);
+                TaskFun fun = std::bind(&ServerTask::ReadThread, ta, std::placeholders::_1);
+                Pool.QueueTaskItem(fun, nullptr, nullptr);
+                connect_num++;
+            }
         }
-        else
+    }
+    else
+    {
+        HANDLE hThread;
+        unsigned threadID;
+        hThread = (HANDLE)_beginthreadex(NULL, 0, UDPReceiveThread, nullptr, 0, &threadID);
+        if (hThread == NULL)
         {
-            ServerTask *ta = new ServerTask;
-            ta->SetSocket(connectfd);
-            TaskFun fun = std::bind(&ServerTask::ReadThread, ta, std::placeholders::_1);
-            Pool.QueueTaskItem(fun, nullptr, nullptr);
-            connect_num++;
+            closesocket(UDPSock);
+            WSACleanup();
+            printf("Fail to create receive socket.\n");
+            return -1;
+        }
+
+        char sendBuff[BUF_SIZE];
+        sockaddr_in addrObj;
+        addrObj.sin_family = AF_INET;
+
+        while (1)
+        {
+            memset(sendBuff, 0x00, sizeof(sendBuff));
+            gets(sendBuff);
+            addrObj.sin_addr = UDP_addr;
+            addrObj.sin_port = htons(SERVER_PORT);
+            int res = sendto(UDPSock, sendBuff, strlen(sendBuff), 0, (struct sockaddr *)&addrObj, sizeof(addrObj));
+            if (res == SOCKET_ERROR)
+            {
+                printf("Send error!!\n");
+            }
         }
     }
 
     close(sockfd);
+    WSACleanup();
     return 0;
 }
