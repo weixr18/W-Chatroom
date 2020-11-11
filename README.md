@@ -22,7 +22,3 @@ Use command
 or/and
 
     Server
-
-## Problems
-
-1. ReadThread on server could not exit correctly.

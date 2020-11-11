@@ -17,7 +17,12 @@ public:
         size_t sock_number;
         time_t time;
 
-        Info() = default;
+        Info()
+        {
+            this->message = "Welcome!";
+            this->sock_number = 0;
+            this->time = 0;
+        }
         Info(std::string mes, size_t sock_num, time_t tim)
         {
             this->message = mes;
@@ -46,9 +51,12 @@ public:
             size_t h3 = time_hash(v.time);
             return size_t(h1 + h2 + h3);
         }
+
     } info_hash;
 
 private:
+    const static std::string EXIT_STR;
+
     static std::hash<std::string> string_hash;
     static std::hash<size_t> sizet_hash;
     static std::hash<time_t> time_hash;

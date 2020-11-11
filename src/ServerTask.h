@@ -14,6 +14,8 @@
 class ServerTask
 {
 private:
+    const static std::string EXIT_STR;
+
 public:
     ServerTask() = default;
 

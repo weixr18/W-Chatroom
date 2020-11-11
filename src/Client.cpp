@@ -22,6 +22,7 @@ unsigned __stdcall PrintThread(void *arg)
             printf("Server end connection.\n");
             break;
         }
+
         printf("%s\n>", buff);
     }
     return 0;

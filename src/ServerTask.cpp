@@ -4,10 +4,15 @@
 
 InfoQueue IQ;
 InfoQueue::Info_hash info_hash;
+const std::string ServerTask::EXIT_STR = "$THR_EXIT$";
 
 void *ServerTask::WriteThreadCallback(int res)
 {
-
+    SOCKET connfd = GetSocket();
+    printf("%d: Write thread exit.\n", connfd);
+    close(connfd);
+    std::string message = EXIT_STR;
+    IQ.add(message, connfd);
     return nullptr;
 }
 
@@ -22,9 +27,6 @@ int ServerTask::WriteThread(void *arg)
         int len = recv(connfd, recvbuf, sizeof(recvbuf), 0);
         if (len <= 0)
         {
-            printf("%d: No buf. Write thread exit.\n", connfd);
-            close(connfd);
-            connect_num--;
             return -1;
         }
         printf("%d: %s\n", connfd, recvbuf);
@@ -41,7 +43,8 @@ int ServerTask::ReadThread(void *arg)
     try
     {
         TaskFun writefun = std::bind(&ServerTask::WriteThread, this, std::placeholders::_1);
-        Pool.QueueTaskItem(writefun, nullptr, nullptr);
+        TaskCallbackFun writeCallback = std::bind(&ServerTask::WriteThreadCallback, this, std::placeholders::_1);
+        Pool.QueueTaskItem(writefun, nullptr, writeCallback);
 
         connfd = GetSocket();
         printf("%d Connected.\n", connfd);
@@ -51,21 +54,23 @@ int ServerTask::ReadThread(void *arg)
         {
             char sendbuf[1024];
             memset(sendbuf, 0x00, sizeof(sendbuf));
-            InfoQueue::Info info;
-            info = IQ.read(last_hash, connfd);
-            size_t res = info_hash(info);
-            if (res != last_hash)
+
+            InfoQueue::Info info = IQ.read(last_hash, connfd);
+            if (strncmp(info.message.c_str(), EXIT_STR.c_str(), EXIT_STR.length()) == 0)
             {
-                last_hash = res;
+                printf("%d: Read thread exit.\n", connfd);
+                connect_num--;
+                close(connfd);
+                return 0;
+            }
+
+            size_t hash_res = info_hash(info);
+            if (hash_res != last_hash)
+            {
+                last_hash = hash_res;
                 info.message = std::to_string(info.sock_number) + ":" + info.message;
                 memcpy(sendbuf, info.message.c_str(), 1024);
-                int sock_res = send(connfd, sendbuf, sizeof(sendbuf), 0);
-                if (sock_res == SOCKET_ERROR)
-                {
-                    printf("%d: Read thread exit.\n", connfd);
-                    close(connfd);
-                    break;
-                }
+                int sock_res = send(connfd, sendbuf, strlen(sendbuf), 0);
             }
         }
     }

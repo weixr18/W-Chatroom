@@ -4,8 +4,6 @@
 
 //create thread pool
 ThreadPool Pool(10);
-volatile size_t connect_num = 0;
-volatile size_t read_num = 0;
 
 int main(int argc, char *argv[])
 {
