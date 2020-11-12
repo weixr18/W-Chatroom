@@ -1,4 +1,4 @@
-# TCP-Chatroom
+# W-Chatroom
 
 Multithread CLI chatroom, pure C++. Now supports both **TCP** and **UDP**.
 
