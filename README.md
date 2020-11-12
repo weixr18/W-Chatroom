@@ -1,14 +1,18 @@
 # TCP-Chatroom
 
-Multithread CLI chatroom, pure C++, based on TCP. Will also support UDP.
+Multithread CLI chatroom, pure C++. Now supports both **TCP** and **UDP**.
 
 ## Acknowledgement
 
-This project uses TTGuoying's thread pool implementation on Windows, with acknowledgements and thanks.
+This project uses [@TTGuoying](https://github.com/TTGuoying)'s thread pool implementation on Windows, with acknowledgements and thanks.
 
 Link: [https://github.com/TTGuoying/ThreadPool](https://github.com/TTGuoying/ThreadPool)
 
-Open source licence: GPLv3.
+Open source licence: LGPLv3.
+
+## Target Environment
+
+Windows 7/Vista/8/10
 
 ## Install
 
@@ -34,5 +38,8 @@ then run Client.exe for each user participating in the chat.
 
     Client.exe
 
-Each client needs to enter the IP address of the Server host (IPv4 support only).
+### Attentions
 
+1. Each client needs to enter the IP address of the Server host (IPv4 support only).
+2. Server and Client should choose the same protocol.
+3. Remember to allow Server.exe pass the firewall.

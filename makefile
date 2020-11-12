@@ -23,8 +23,7 @@ $(CLIENT_TARGET): $(CLIENT_OBJECTS)
 
 $(SERVER_TARGET): $(SERVER_OBJECTS)
 	$(CC) -o $(SERVER_TARGET) $(SERVER_OBJECTS) $(LIBS)
-  
-# $@表示所有目标集  
+   
 $(DIR_OBJ)/%.o: $(DIR_SRC)/%.cpp   
 	$(CC) -c $(CXXFLAGS) $(INCLUDE) $< -o $@
   
