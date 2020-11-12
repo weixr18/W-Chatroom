@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <string.h>
 
-#define __USE_TCP
+//#define __USE_TCP
 #ifdef __USE_TCP
 #define USE_TCP true
 #else //__USE_TCP
@@ -44,7 +44,7 @@ unsigned __stdcall PrintThread(void *arg)
         sockaddr_in addrObj;
         addrObj.sin_family = AF_INET;
         addrObj.sin_port = htons(SERVER_PORT);
-        int len;
+        int len = sizeof(sockaddr);
 
         while (1)
         {
@@ -52,9 +52,10 @@ unsigned __stdcall PrintThread(void *arg)
             fflush(stdout);
             memset(buff, 0, BUF_SIZE);
             int res = recvfrom(Client_Sock, buff, BUF_SIZE - 1, 0, &UDPServerAddr, &len);
-            if (res <= 0)
+            if (res == SOCKET_ERROR)
             {
                 printf("Server end connection.\n");
+                printf("errno = %d\n", GetLastError());
                 break;
             }
 

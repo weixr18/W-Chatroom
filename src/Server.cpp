@@ -2,7 +2,7 @@
 #include "InfoQueue.h"
 #include "ServerTask.h"
 
-#define __USE_TCP
+//#define __USE_TCP
 #ifdef __USE_TCP
 #define USE_TCP true
 #else //__USE_TCP
@@ -15,6 +15,7 @@
 // UDP
 SOCKET UDPSock;
 in_addr UDP_addr;
+u_short UDP_port;
 
 //create thread pool
 ThreadPool Pool(10);
@@ -34,6 +35,7 @@ unsigned __stdcall UDPReceiveThread(void *arg)
         }
         printf("[%s]Says:%s\n", inet_ntoa(addr.sin_addr), recvBuf);
         UDP_addr = addr.sin_addr;
+        UDP_port = addr.sin_port;
     }
     return 0;
 }
@@ -152,7 +154,7 @@ int main(int argc, char *argv[])
             memset(sendBuff, 0x00, sizeof(sendBuff));
             gets(sendBuff);
             addrObj.sin_addr = UDP_addr;
-            addrObj.sin_port = htons(SERVER_PORT);
+            addrObj.sin_port = UDP_port;
             int res = sendto(UDPSock, sendBuff, strlen(sendBuff), 0, (struct sockaddr *)&addrObj, sizeof(addrObj));
             if (res == SOCKET_ERROR)
             {
