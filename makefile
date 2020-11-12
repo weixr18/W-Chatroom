@@ -7,7 +7,7 @@ DIR_OBJ:= ./obj
 DIR_OBJ_WIN:= .\obj
 SERVER_TARGET:= Server.exe
 CLIENT_TARGET:= Client.exe
-SERVER_OBJECTS := Server.o ThreadPool.o ServerTask.o InfoQueue.o 
+SERVER_OBJECTS := Server.o TCPServer.o UDPServer.o ThreadPool.o ServerTask.o InfoQueue.o 
 CLIENT_OBJECTS := Client.o
 
 SERVER_OBJECTS := $(addprefix $(DIR_OBJ)/,$(SERVER_OBJECTS))

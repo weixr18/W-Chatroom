@@ -1,0 +1,118 @@
+#include <winsock2.h>
+#include <Windows.h>
+#include <time.h>
+#include <unistd.h>
+#include <ws2tcpip.h>
+#include <stdio.h>
+#include "Server.h"
+
+#define SERVER_PORT 6501
+#define BUF_SIZE 1024
+
+// UDP
+SOCKET UDPSock;
+in_addr UDP_addr;
+u_short UDP_port;
+
+unsigned __stdcall UDPReceiveThread(void *arg)
+{
+    char recvBuf[BUF_SIZE];
+    while (true)
+    {
+        memset(recvBuf, 0x00, sizeof(recvBuf));
+        struct sockaddr_in addr;
+        int len = sizeof(sockaddr);
+        int res = recvfrom(UDPSock, recvBuf, sizeof(recvBuf), 0, (struct sockaddr *)&addr, &len);
+        if (res == SOCKET_ERROR)
+        {
+            return -1;
+        }
+        printf("[%s]Says:%s\n", inet_ntoa(addr.sin_addr), recvBuf);
+        UDP_addr = addr.sin_addr;
+        UDP_port = addr.sin_port;
+    }
+    return 0;
+}
+
+int runUDPServer(int argc, char *argv[])
+{
+    // startup
+    WORD sockVersion = MAKEWORD(2, 2);
+    WSADATA wsaData;
+    printf("Server start.\n");
+    if (WSAStartup(sockVersion, &wsaData) != 0)
+    {
+        printf("WSA startup error!\n");
+        return -1;
+    }
+    else
+    {
+        printf("WSA started.\n");
+    }
+
+    // create **UDP** socket
+    SOCKET sockfd;
+    sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    UDPSock = sockfd;
+
+    if (sockfd == INVALID_SOCKET)
+    {
+        printf("Socket error!\n");
+        return -1;
+    }
+    else
+    {
+        printf("Socket created.\n");
+    }
+
+    // set socket address information
+    struct sockaddr_in ser, cli;
+    memset(&ser, 0, sizeof(ser));
+    ser.sin_family = AF_INET;
+    ser.sin_port = htons(SERVER_PORT);
+    ser.sin_addr.S_un.S_addr = INADDR_ANY; //inet_addr("127.0.0.1");
+
+    // bind socket
+    if (bind(sockfd, (LPSOCKADDR)&ser, sizeof(ser)) == SOCKET_ERROR)
+    {
+        printf("Bind error!\n");
+    }
+    else
+    {
+        printf("Bind success.\n");
+    }
+
+    srand(time(NULL));
+
+    HANDLE hThread;
+    unsigned threadID;
+    hThread = (HANDLE)_beginthreadex(NULL, 0, UDPReceiveThread, nullptr, 0, &threadID);
+    if (hThread == NULL)
+    {
+        closesocket(UDPSock);
+        WSACleanup();
+        printf("Fail to create receive socket.\n");
+        return -1;
+    }
+
+    char sendBuff[BUF_SIZE];
+    sockaddr_in addrObj;
+    addrObj.sin_family = AF_INET;
+
+    while (1)
+    {
+        memset(sendBuff, 0x00, sizeof(sendBuff));
+        gets(sendBuff);
+        addrObj.sin_addr = UDP_addr;
+        addrObj.sin_port = UDP_port;
+        int res = sendto(UDPSock, sendBuff, strlen(sendBuff), 0, (struct sockaddr *)&addrObj, sizeof(addrObj));
+        if (res == SOCKET_ERROR)
+        {
+            printf("Send error!!\n");
+        }
+    }
+
+    close(sockfd);
+    WSACleanup();
+    return 0;
+}
