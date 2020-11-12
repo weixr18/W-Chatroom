@@ -1,6 +1,6 @@
 # TCP-Chatroom
 
-Multithread CLI chatroom, pure C++, based on TCP.
+Multithread CLI chatroom, pure C++, based on TCP. Will also support UDP.
 
 ## Acknowledgement
 

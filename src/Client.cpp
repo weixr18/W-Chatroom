@@ -8,19 +8,23 @@
 #include <string.h>
 
 sockaddr UDPServerAddr;
-
-#define SERVER_PORT 6500
-SOCKET Client_Sock;
+SOCKET ClientSock;
+#define SERVER_TCP_PORT 6500
+#define SERVER_UDP_PORT 6501
 #define BUF_SIZE 1024
 
-unsigned __stdcall TCPPrintThread(void *arg)
+
+/*
+ * TCP print thread.
+*/
+unsigned __stdcall TCPPrintThread(void* arg)
 {
     while (1)
     {
-        char buff[BUF_SIZE] = {0};
+        char buff[BUF_SIZE] = { 0 };
         fflush(stdout);
         memset(buff, 0, BUF_SIZE);
-        int res = recv(Client_Sock, buff, BUF_SIZE - 1, 0);
+        int res = recv(ClientSock, buff, BUF_SIZE - 1, 0);
         if (res <= 0)
         {
             printf("Server end connection.\n");
@@ -32,25 +36,28 @@ unsigned __stdcall TCPPrintThread(void *arg)
     return 0;
 }
 
-unsigned __stdcall UDPPrintThread(void *arg)
+/*
+ * UDP print thread.
+*/
+unsigned __stdcall UDPPrintThread(void* arg)
 {
 
     sockaddr_in addrObj;
     addrObj.sin_family = AF_INET;
-    addrObj.sin_port = htons(SERVER_PORT);
+    addrObj.sin_port = htons(SERVER_UDP_PORT);
     int len = sizeof(sockaddr);
 
     while (1)
     {
-        char buff[BUF_SIZE] = {0};
+        char buff[BUF_SIZE] = { 0 };
         fflush(stdout);
         memset(buff, 0, BUF_SIZE);
-        int res = recvfrom(Client_Sock, buff, BUF_SIZE - 1, 0, &UDPServerAddr, &len);
+        int res = recvfrom(ClientSock, buff, BUF_SIZE - 1, 0, &UDPServerAddr, &len);
         if (res == SOCKET_ERROR)
         {
             printf("Server end connection.\n");
             printf("errno = %d\n", GetLastError());
-            break;
+            return -1;
         }
 
         printf("%s\n>", buff);
@@ -58,10 +65,13 @@ unsigned __stdcall UDPPrintThread(void *arg)
     return 0;
 }
 
-int TCPClient(int argc, char *argv[])
+/*
+ * TCP Client main thread.
+*/
+int TCPClient(int argc, char* argv[])
 {
     // Input server IP
-    char serverIPAddr[20] = {0};
+    char serverIPAddr[20] = { 0 };
     printf("Server IP address:");
     gets(serverIPAddr);
     unsigned long server_addr = inet_addr(serverIPAddr);
@@ -69,7 +79,7 @@ int TCPClient(int argc, char *argv[])
     // startup
     WORD sockVersion = MAKEWORD(2, 2);
     WSADATA wsaData;
-    printf("Server start.\n");
+    printf("Client start.\n");
     if (WSAStartup(sockVersion, &wsaData) != 0)
     {
         printf("WSA startup error!\n");
@@ -81,8 +91,8 @@ int TCPClient(int argc, char *argv[])
     }
 
     // create socket
-    Client_Sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (Client_Sock == INVALID_SOCKET)
+    ClientSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (ClientSock == INVALID_SOCKET)
     {
         printf("Socket error!\n");
         return -1;
@@ -97,10 +107,10 @@ int TCPClient(int argc, char *argv[])
     memset(&ser, 0x00, sizeof(ser));
     ser.sin_family = AF_INET;
     ser.sin_addr.S_un.S_addr = server_addr;
-    ser.sin_port = htons(SERVER_PORT);
+    ser.sin_port = htons(SERVER_TCP_PORT);
 
     // connect socket
-    if (connect(Client_Sock, (struct sockaddr *)&ser, sizeof(ser)) == SOCKET_ERROR)
+    if (connect(ClientSock, (struct sockaddr*)&ser, sizeof(ser)) == SOCKET_ERROR)
     {
         printf("Connect error!\n");
         return -1;
@@ -122,27 +132,31 @@ int TCPClient(int argc, char *argv[])
 
     while (1)
     {
-        char buff[BUF_SIZE] = {0};
+        char buff[BUF_SIZE] = { 0 };
         fgets(buff, BUF_SIZE - 1, stdin);
         printf(">");
         if (strncmp(buff, "quit", 4) == 0)
         {
             printf("Connection close. Bye.\n");
-            close(Client_Sock);
+            close(ClientSock);
             break;
         }
-        send(Client_Sock, buff, strlen(buff) - 1, 0);
+        send(ClientSock, buff, strlen(buff) - 1, 0);
         memset(buff, 0, 1024);
     }
 
-    close(Client_Sock);
+    close(ClientSock);
     return 0;
 }
 
-int UDPClient(int argc, char *argv[])
+
+/*
+ * UDP Client main thread.
+*/
+int UDPClient(int argc, char* argv[])
 {
     // Input server IP
-    char serverIPAddr[20] = {0};
+    char serverIPAddr[20] = { 0 };
     printf("Server IP address:");
     gets(serverIPAddr);
     unsigned long server_addr = inet_addr(serverIPAddr);
@@ -150,47 +164,43 @@ int UDPClient(int argc, char *argv[])
     // startup
     WORD sockVersion = MAKEWORD(2, 2);
     WSADATA wsaData;
-    printf("Server start.\n");
+    printf("Client start.\n");
     if (WSAStartup(sockVersion, &wsaData) != 0)
     {
         printf("WSA startup error!\n");
+        fflush(stdout);
+        WSACleanup();
         return -1;
-    }
-    else
-    {
-        printf("WSA started.\n");
     }
 
     // create UDP socket
-    Client_Sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (Client_Sock == INVALID_SOCKET)
+    ClientSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (ClientSock == INVALID_SOCKET)
     {
         printf("Socket error!\n");
+        close(ClientSock);
+        fflush(stdout);
+        WSACleanup();
         return -1;
-    }
-    else
-    {
-        printf("Socket created.\n");
     }
 
     // set socket address information
-    struct sockaddr_in ser, cli;
+    struct sockaddr_in ser;
     memset(&ser, 0x00, sizeof(ser));
     ser.sin_family = AF_INET;
     ser.sin_addr.S_un.S_addr = server_addr;
-    ser.sin_port = htons(SERVER_PORT);
+    ser.sin_port = htons(SERVER_UDP_PORT);
 
-    memcpy(&UDPServerAddr, (struct sockaddr *)&ser, sizeof(struct sockaddr));
+    memcpy(&UDPServerAddr, (struct sockaddr*)&ser, sizeof(struct sockaddr));
 
     // connect socket
-    if (connect(Client_Sock, (struct sockaddr *)&ser, sizeof(ser)) == SOCKET_ERROR)
+    if (connect(ClientSock, (struct sockaddr*)&ser, sizeof(ser)) == SOCKET_ERROR)
     {
         printf("Connect error!\n");
+        close(ClientSock);
+        fflush(stdout);
+        WSACleanup();
         return -1;
-    }
-    else
-    {
-        printf("Connect success.\n");
     }
 
     // create thread
@@ -200,32 +210,58 @@ int UDPClient(int argc, char *argv[])
     if (hThread == NULL)
     {
         printf("Thread create error!\n");
+        close(ClientSock);
+        fflush(stdout);
+        WSACleanup();
+        return -1;
+    }
+    printf("Client startup success.\n");
+
+    // say Hi to server
+    char buff[BUF_SIZE] = { 0 };
+    memcpy(buff, "Hi", 2);
+    int res = sendto(ClientSock, buff, strlen(buff), 0, &UDPServerAddr, sizeof(sockaddr));
+    if (res == SOCKET_ERROR)
+    {
+        printf("Send error.\n");
+        printf("errno = %d\n", GetLastError());
+        close(ClientSock);
+        fflush(stdout);
+        WSACleanup();
         return -1;
     }
 
+    // main loop
     while (1)
     {
-        char buff[BUF_SIZE] = {0};
+        memset(buff, 0, 1024);
         fgets(buff, BUF_SIZE - 1, stdin);
         printf(">");
         if (strncmp(buff, "quit", 4) == 0)
         {
             printf("Connection close. Bye.\n");
-            close(Client_Sock);
+            close(ClientSock);
             break;
         }
-        send(Client_Sock, buff, strlen(buff) - 1, 0);
-        memset(buff, 0, 1024);
+        int res = sendto(ClientSock, buff, strlen(buff) - 1, 0, &UDPServerAddr, sizeof(sockaddr));
+        if (res == SOCKET_ERROR)
+        {
+            printf("Send error.\n");
+            printf("errno = %d\n", GetLastError());
+            break;
+        }
     }
 
-    close(Client_Sock);
+    close(ClientSock);
+    fflush(stdout);
+    WSACleanup();
     return 0;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     printf("Choose protocal: TCP(T)/UDP(U) ?");
-    char s[10] = {0};
+    char s[10] = { 0 };
     gets(s);
     if (s[0] == 'T')
     {
