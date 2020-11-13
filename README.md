@@ -24,7 +24,7 @@ Use this command to compile:
 
     make
 
-You can also use multi-thread compiling:
+You can also compile with multi-thread:
 
     make -j4
 
