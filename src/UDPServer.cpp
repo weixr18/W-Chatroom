@@ -1,9 +1,9 @@
-#include <Windows.h>
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <Windows.h>
 
 #include <hash_map>
 #include <vector>
@@ -15,14 +15,14 @@
 #define MESG_SIZE 990 // "[192.168.127.131:4560]:"
 
 SOCKET UDPSock = INVALID_SOCKET;
-sockaddr_in currnt_addr = {0};
-volatile char recvBuf[BUF_SIZE] = {0};
+sockaddr_in currnt_addr = { 0 };
+volatile char recvBuf[BUF_SIZE] = { 0 };
 
 typedef __gnu_cxx::hash_map<size_t, sockaddr_in> SocketMap;
 
 struct hash_sockaddr_in
 {
-    size_t operator()(const class sockaddr_in &s) const
+    size_t operator()(const class sockaddr_in& s) const
     {
         return (s.sin_addr.s_addr << 8) + s.sin_port;
     }
@@ -34,7 +34,7 @@ SocketMap socketMap;
 /*
  * Receive thread
 */
-unsigned __stdcall UDPReceiveThread(void *arg)
+unsigned __stdcall UDPReceiveThread(void* arg)
 {
     char tempBuf[BUF_SIZE];
     while (true)
@@ -43,13 +43,13 @@ unsigned __stdcall UDPReceiveThread(void *arg)
         sockaddr_in addr;
         int len = sizeof(sockaddr);
         int res =
-            recvfrom(UDPSock, (char *)tempBuf, sizeof(tempBuf), 0, (sockaddr *)&addr, &len);
+            recvfrom(UDPSock, (char*)tempBuf, sizeof(tempBuf), 0, (sockaddr*)&addr, &len);
         if (res == SOCKET_ERROR)
         {
             printf("recvfrom error.\n");
             return -1;
         }
-        if (strncmp("quit", (const char *)recvBuf, 4) == 0)
+        if (strncmp("quit", (const char*)recvBuf, 4) == 0)
         {
             printf("%s Bye.", inet_ntoa(addr.sin_addr));
             socketMap.erase(socketMap.find(sock_hash(addr)));
@@ -59,7 +59,7 @@ unsigned __stdcall UDPReceiveThread(void *arg)
             memcpy((void*)recvBuf, tempBuf, sizeof(tempBuf));
             printf("[%s:%d]:%s\n", inet_ntoa(addr.sin_addr), addr.sin_port, recvBuf);
         }
-        
+
         if (socketMap.find(sock_hash(addr)) == socketMap.end())
         {
             socketMap.insert(std::pair<size_t, sockaddr_in>(sock_hash(addr), addr));
@@ -72,7 +72,7 @@ unsigned __stdcall UDPReceiveThread(void *arg)
 /*
  * Main thread (send)
 */
-int runUDPServer(int argc, char *argv[])
+int runUDPServer(int argc, char* argv[])
 {
     // random seed initialize
     srand(time(NULL));
@@ -134,14 +134,14 @@ int runUDPServer(int argc, char *argv[])
 
     // main loop
     size_t lastHash;
-    char lastRecv[BUF_SIZE] = {0};
-    char sendBuff[BUF_SIZE] = {0};
+    char lastRecv[BUF_SIZE] = { 0 };
+    char sendBuff[BUF_SIZE] = { 0 };
 
     while (1)
     {
         // sleep for a random time
         Sleep(rand() % 200);
-        
+
         // check if has read the massage
         if (sock_hash(currnt_addr) == lastHash &&
             strncmp((const char*)recvBuf, lastRecv, MESG_SIZE) == 0)
@@ -151,14 +151,14 @@ int runUDPServer(int argc, char *argv[])
         lastHash = sock_hash(currnt_addr);
         memset(lastRecv, 0x00, sizeof(lastRecv));
         memcpy(lastRecv, (void*)recvBuf, MESG_SIZE);
-        
+
         // prepare the send string
         memset(sendBuff, 0x00, sizeof(sendBuff));
         std::string prefix = "[" + std::string(inet_ntoa(currnt_addr.sin_addr)) +
-                             ":" + std::to_string(currnt_addr.sin_port) + "]:";
+            ":" + std::to_string(currnt_addr.sin_port) + "]:";
         memcpy(sendBuff, prefix.c_str(), prefix.length());
         memcpy(sendBuff + prefix.length(), (void*)recvBuf, MESG_SIZE);
-        
+
         // send to all other clients
         for (auto t = socketMap.begin(); t != socketMap.end(); t++)
         {
@@ -166,7 +166,7 @@ int runUDPServer(int argc, char *argv[])
             {
                 sockaddr_in send_addr = (*t).second;
                 int res = sendto(UDPSock, sendBuff, strlen(sendBuff), 0,
-                                 (struct sockaddr *)&send_addr, sizeof(send_addr));
+                    (struct sockaddr*)&send_addr, sizeof(send_addr));
                 if (res == SOCKET_ERROR)
                 {
                     printf("Send error!!\n");
